@@ -501,3 +501,35 @@ since we ahve finished the reporting, what if we want to give permission to othe
 
 
 ## Part 11 (FINAL) - END to END Pipeline Testing | Azure Data Engineering End to End Real Time Project
+
+1. Now we will set a trigger time that will trigger the pipeline to run at certain time so that we dont need to trigger it manually everytime. Go to ADF resource and click on the active pipeline and add trigger. and publish it
+
+<img width="544" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/f07a2372-67cc-4ede-8c8d-2e0f71424434">
+
+2. Now we will go to the SSMS to insert new data inside Customer data
+
+```
+SET IDENTITY_INSERT [AdventureWorksLT2019].[SalesLT].[Customer]
+([CustomerID],
+ [NameStyle],
+ [Title],
+ [FirstName],
+ [MiddleName],
+ [LastName],
+ [Suffix],
+ [CompanyName],
+ [SalesPerson],
+ [EmailAddress],
+ [Phone],
+ [PasswordHash],
+ [PasswordSalt],
+ [rowguid]
+ [ModifiedDate])
+VALUES
+(595959,'Mr.','John','SR','Max','Jr.','xyz','adventure-works\John','john@gmail.com','13456-095-0045','Trade','Analyst','1F54D149-9FDD-B425-BAE25CE','2015-12-12')
+
+SET IDENTITY_INSERT [AdventureWorksLT2019].[SalesLT].[Customer] OFF;
+```
+
+3. we can see the pipeline in process at that time that we set the trigger.
+<img width="593" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/0d6afef1-1d72-4a27-8546-8366a7425c1c">
