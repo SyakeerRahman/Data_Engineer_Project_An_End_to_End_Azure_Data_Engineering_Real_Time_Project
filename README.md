@@ -205,7 +205,7 @@ so next we are going to do transformation from bronze to silver and silver to go
 
 ``ruby
 dbutils.fs.ls('mnt/bronze/SalesLT/')
-``
+`` <br \>
 ``ruby
 dbutils.fs.ls('mnt/silver/')
 ``
