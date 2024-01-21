@@ -203,26 +203,88 @@ so next we are going to do transformation from bronze to silver and silver to go
 
 2. open the bronze to silver workbook and write all these codes:
 
-``ruby
-dbutils.fs.ls('mnt/bronze/SalesLT/') <br />
+```
+dbutils.fs.ls('mnt/bronze/SalesLT/') 
+
 dbutils.fs.ls('mnt/silver/')
-`` <br />
-``ruby
-dbutils.fs.ls('mnt/silver/')
-``
-``ruby
+
 input_path = 'mnt/bronze/SalesLT/Address/Address/parquet'
-``
-``ruby
+
 df = spark.read.format('parquet').load(input_path)
-``
+
+display(df)
+
+from pyspark.sql.functions import from_utc_timestamp, date_format
+from pyspark.sql.types import TimestampType
+df = df.withColumn("ModifiedDate", date_format(from_utc_timestamp(df["ModifiedDate"].cast(TimestampType()), "UTC"), "yyyy-MM-dd"))
+
+display(df)
+
+%md
+DOING TRANSFORMATION FOR ALL TABLES
 
 
+table_name = []
+for i in dbutils.fs.ls('mnt/bronze/SalesLT/'):
+   table_name.append(i.name.split('/')[0])
 
+table_name
 
+from pyspark.sql.functions import from_utc_timestamp, date_format
+from pyspark.sql.types import TimestampType
+for i in table_name:
+   path = '/mnt/bronze/SalesLT/'+i+'/'+i+'.parquet'
+   df = spark.read.format('parquet').load(path)
+   column = df.columns
+   for col in column:
+      if "Date" in col or "date" in col:
+         df = df.withColumn(col,date_format(from_utc_timestamp(df[col].cast(TimestampType()), "UTC"), "yyyy-MM-dd"))
+    output_path = '/mnt/silver/SalesLT/' +i +'/'
+    df.write.format('delta').mode("overwrite").save(output_path)
 
+display(df
+```
 
+3. open the silver to gold workbook and write all these codes:
+```
+dbutils.fs.ls('mnt/silver/SalesLT/') 
 
+dbutils.fs.ls('mnt/gold/')
+
+input_path = 'mnt/silver/SalesLT/Address/'
+
+df = spark.read.format('delta').load(input_path)
+
+display(df)
+
+from pyspark.sql import SparkSession
+from  pyspark.sql.functions import col, regexp_replace
+column_names = df.columns
+for old_col_name in column_names
+   new_col_names = "".join(["_" + char if char.isupper() and not old_col_name[i-1].isupper() else char for i, char in enumerate(ild_col_name)]).lstrip("_")
+   df = df.withColumnRenamed(old_col_name, new_col_name)
+
+display(df)
+
+table_name = []
+for i in dbutils.fs.ls('mnt/silver/SalesLT/'):
+   table_name.append(i.name.split('/')[0])
+
+table_name
+
+for name in table_name:
+   path = '/mnt/silver/SalesLT/' + name
+   print(path)
+   df = spark.read.format('delta').load(path)
+   column_names = df.columns
+   for old_col_name in column_names:
+      new_col_names = "".join(["_" + char if char.isupper() and not old_col_name[i-1].isupper() else char for i, char in enumerate(ild_col_name)]).lstrip("_")
+    df = df.withColumnRenamed(old_col_name, new_col_name)
+output_path = '/mnt/gold/SalesLT/' + name +'/'
+df.write.format('delta').mode("overwrite").save(output_path)
+
+display(df
+```
 
 ## Part 7 - Data Transformation (3) | End to End Azure Data Engineering Project
 ## Part 8 - Data Loading (Azure Synapse Analytics) | End to End Azure Data Engineering Project
