@@ -169,7 +169,60 @@ in the sink, click again the pencil icon and on the connecton part, put the quer
 
 
 ## Part 5 - Data Transformation (1) | End to End Azure Data Engineering Project |Mounting the Datalake
+
+1. Launch databrick workspace > click on compute tab and create new compute
+
+<img width="407" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/488ecbb0-fd11-4d64-8f7d-ab783bec1361">
+<img width="232" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/41ff3683-0bb6-4b6c-963f-4509c3d09c68">
+
+2. create a new workbook
+
+<img width="357" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/9de178a8-7a8e-476c-8acf-6cfc2af4a87b">
+
+3. pass the code inside the workbook, change the container-name to (bronze, silver, gold) and storage-account-name to storage account
+
+``ruby
+configs = {
+  "fs.azure.account.auth.type": "CustomAccessToken",
+  "fs.azure.account.custom.token.provider.class": spark.conf.get("spark.databricks.passthrough.adls.gen2.tokenProviderClassName")
+}
+# Optionally, you can add <directory-name> to the source URI of your mount point.
+dbutils.fs.mount(
+  source = "abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/",
+  mount_point = "/mnt/<mount-name>",
+  extra_configs = configs)
+``
+<img width="391" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/f6d3bc66-3cea-4b48-8c08-6094ac534d99">
+
 ## Part 6 - Data Transformation (2) | End to End Azure Data Engineering Project
+
+so next we are going to do transformation from bronze to silver and silver to gold
+
+1. create 2 more workbooks and rename them to bronze to silver and silver to gold
+<img width="307" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/7d1ca1ed-9c04-4644-9fac-f140ae8bd9d7">
+
+2. open the bronze to silver workbook and write all these codes:
+
+``ruby
+dbutils.fs.ls('mnt/bronze/SalesLT/')
+``
+``ruby
+dbutils.fs.ls('mnt/silver/')
+``
+``ruby
+input_path = 'mnt/bronze/SalesLT/Address/Address/parquet'
+``
+``ruby
+df = spark.read.format('parquet').load(input_path)
+``
+
+
+
+
+
+
+
+
 ## Part 7 - Data Transformation (3) | End to End Azure Data Engineering Project
 ## Part 8 - Data Loading (Azure Synapse Analytics) | End to End Azure Data Engineering Project
 ## Part 9 - Data Reporting (Power BI) | End to End Azure Data Engineering Project 
