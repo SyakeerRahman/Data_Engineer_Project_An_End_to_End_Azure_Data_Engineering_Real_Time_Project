@@ -106,6 +106,68 @@ if connection successfull, click create
 
 
 ## Part 4- Data Ingestion (2) | End to End Azure Data Engineering Project
+
+so now we are going to copy all the tables from SQL Server to our datawarehouse using Azure Data Factory pipeline
+
+1. inside ADF, in Author create a new pipeline and rename it to copy_all_table, for activities use lookup
+<img width="479" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/7cc16659-874c-43aa-bb29-511a16b16ef8">
+
+2. for settings > source dataset > create new+ > and set properties as below:
+<img width="229" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/0668d2d8-426f-47b4-ae98-bbbc6803e061">
+and instead of table, use query and paste the query inside the box and run the pipeline (debug):
+``ruby
+select
+s.name as SchemaName
+t.name as TableName
+FROM sys.tables t
+INNER JOIN sys.schemas s
+ON t.schema_id = t.schema_id
+WHERE s.name = 'SalesLT'
+``
+
+3. add a new activity ForEach, rename it to ForEach Schema Table, on the settings > item > add dynamic content
+
+<img width="346" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/f5f187f7-d29f-4cb7-b3a8-17920cf52efb">
+
+``ruby
+@activity('look for all table').output.value
+``
+and on the activiy setting (highlighted in yellow) and click on the pencil icon so that we will go inside the ForEach activities 
+
+
+4. inside the ForEach, drag copy activity and set source dataset and also the query as below so that we will grab all the table name from the schema
+
+<img width="332" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/e65799d8-0886-4c8e-adbe-3175d299ab54">
+
+``ruby
+@{concat(select * from ', item.SchemaName,'.', item.TableName)}
+``
+
+5. for sink, set it as below
+<img width="248" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/c95107eb-62ea-4f54-ae16-5dfad8422e15">
+
+beside the sink dataset, click on pencil icon and create parameter > new+ and add schemaname & tablename
+
+<img width="372" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/120b4a10-1c92-4cd5-8c08-c6e702f41d27">
+
+after that go to the sink and set it as below 
+<img width="458" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/d7034761-88d4-4547-9d19-253467a4ab3e">
+
+in the sink, click again the pencil icon and on the connecton part, put the query as below
+<img width="471" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/1e94c7c4-bc7b-4050-b744-e2649949c1c7">
+``ruby
+@{concat(dataset().schemaname, '/',dataset().tablename)}
+@{concat(dataset().tablename,'.parquet')}
+``
+
+6. click debug and wait for the pipeline to complete the job, now go to monitor tab to see whether all the job succeed or not
+
+<img width="547" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/da930e85-97c6-4e08-97b3-e61b4838c080">
+
+7. go to storage account and open the bronze container to see all the table that have been brought to the datawarehouse
+<img width="547" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/ac844796-78c7-4a59-96d0-1d3578cd4716">
+
+
 ## Part 5 - Data Transformation (1) | End to End Azure Data Engineering Project |Mounting the Datalake
 ## Part 6 - Data Transformation (2) | End to End Azure Data Engineering Project
 ## Part 7 - Data Transformation (3) | End to End Azure Data Engineering Project
