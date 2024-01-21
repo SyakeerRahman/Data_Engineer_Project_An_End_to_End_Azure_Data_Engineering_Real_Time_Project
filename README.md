@@ -170,6 +170,8 @@ in the sink, click again the pencil icon and on the connecton part, put the quer
 
 ## Part 5 - Data Transformation (1) | End to End Azure Data Engineering Project |Mounting the Datalake
 
+<img width="502" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/1e53ef30-d628-441a-a041-fb04b95a9041">
+
 1. Launch databrick workspace > click on compute tab and create new compute
 
 <img width="407" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/488ecbb0-fd11-4d64-8f7d-ab783bec1361">
@@ -195,6 +197,8 @@ dbutils.fs.mount(
 <img width="391" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/f6d3bc66-3cea-4b48-8c08-6094ac534d99">
 
 ## Part 6 - Data Transformation (2) | End to End Azure Data Engineering Project
+
+<img width="502" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/73de6822-4cb7-4ef7-b03a-1ae7ca35b551">
 
 so next we are going to do transformation from bronze to silver and silver to gold
 
@@ -287,7 +291,213 @@ display(df
 ```
 
 ## Part 7 - Data Transformation (3) | End to End Azure Data Engineering Project
+
+<img width="502" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/773e1d7f-1031-4d63-bd12-615a09f84152">
+
+Now, for this part we are going to automate the process of the pipeline from Bronze to Silver and Silver to Gold
+
+1. firstly we are going to modified a lil bit of code that we have done by removing some of the unnecessary code, so just use the code below:
+
+BRONZE TO SILVER
+```
+table_name = []
+for i in dbutils.fs.ls('mnt/bronze/SalesLT/'):
+   table_name.append(i.name.split('/')[0])
+
+table_name
+
+from pyspark.sql.functions import from_utc_timestamp, date_format
+from pyspark.sql.types import TimestampType
+for i in table_name:
+   path = '/mnt/bronze/SalesLT/'+i+'/'+i+'.parquet'
+   df = spark.read.format('parquet').load(path)
+   column = df.columns
+   for col in column:
+      if "Date" in col or "date" in col:
+         df = df.withColumn(col,date_format(from_utc_timestamp(df[col].cast(TimestampType()), "UTC"), "yyyy-MM-dd"))
+    output_path = '/mnt/silver/SalesLT/' +i +'/'
+    df.write.format('delta').mode("overwrite").save(output_path)
+
+display(df
+```
+
+SILVER TO GOLD
+```
+table_name = []
+for i in dbutils.fs.ls('mnt/silver/SalesLT/'):
+   table_name.append(i.name.split('/')[0])
+
+table_name
+
+for name in table_name:
+   path = '/mnt/silver/SalesLT/' + name
+   print(path)
+   df = spark.read.format('delta').load(path)
+   column_names = df.columns
+   for old_col_name in column_names:
+      new_col_names = "".join(["_" + char if char.isupper() and not old_col_name[i-1].isupper() else char for i, char in enumerate(ild_col_name)]).lstrip("_")
+    df = df.withColumnRenamed(old_col_name, new_col_name)
+output_path = '/mnt/gold/SalesLT/' + name +'/'
+df.write.format('delta').mode("overwrite").save(output_path)
+
+display(df
+```
+
+2. Open Azure Data Factory and go to manage tab and create new linked services and add databricks
+<img width="553" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/e45e38c8-5183-47c2-b149-d348c92f480f">
+
+3. for the linked servce details, follow as below
+
+<img width="230" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/d1baebd9-dc4f-47c9-a8af-78cb408b7a9f">
+
+go to databricks and click on the username on the top right corner and click user setting, and click on generate new token, make sure to COPY THE TOKEN IMMEDIATELY
+<img width="557" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/5856558c-7b68-4f07-a2ce-014cb8f17c8e">
+
+now open Key Vault Resouces and create new secret key and paste the token inside secret value
+<img width="323" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/04ceab5f-856a-412d-a4fc-2e2961af34ba">
+
+continue the link service setup as below
+<img width="213" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/7318d438-abcc-4eb3-8c19-a40793e1f422">
+
+4. click publish all
+<img width="421" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/c0b6a427-72a9-4515-be7b-ea9494ecae43">
+
+5. now open back the ADF pipeline, and drag notebooks activites into the pipeline and set the path of notebooks using bronze to silver notebooks
+
+<img width="562" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/d5cbd37c-f9d4-4a97-8bfa-deb309cc093d">
+<img width="221" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/c740177a-177d-4dbd-8048-dba7eb095558">
+<img width="215" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/89f4d31e-7170-4dc1-8545-e7d24db4d836">
+
+6. repeat the same step but using silver to gold notebooks
+
+<img width="458" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/9786d68b-9540-4ec0-acd0-af30efd6b1c6">
+
+7. click publish and click trigger now. see the pipeline status under monitor tab
+
+<img width="544" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/d227e9ab-2d48-4b24-8c86-e4e337a46abf">
+
 ## Part 8 - Data Loading (Azure Synapse Analytics) | End to End Azure Data Engineering Project
+
+<img width="502" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/a0d881ef-0897-4c2a-9042-bdf1140ef804">
+
+Now since we already have  a gold database, we are going to load it inside Azure Synapse Analytics which are  build on top of Azure Data Factory,
+click on the azure synapse analytics resource and open Synapse Studio
+<img width="257" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/53fecd4c-3fea-49cd-98f5-487da4ce56b8">
+
+1. create a new sql database by going to data tab and click + and choose SQL database, we are going with serverless pool since we are just going to use the compute power to do the query and not dedicated pool since this will use the database and compute power (much expensive)
+<img width="327" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/50cbf57a-458a-426a-878b-e66207736305">
+<img width="116" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/a7ae108a-6fa3-4d33-9d57-b5fd4ff8fb90">
+
+
+2. now go to the linked and query top 100  rows for address adn set the file format to delta
+<img width="469" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/e910f25d-4ccd-49ee-a514-49f25bad6cfc">
+
+3. create view address as we will use that later to connect to power bi
+<img width="487" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/9a5c5b4c-6e43-47e6-bbbf-0842798c829b">
+
+4. instead of repeating step 3 for all tables, we are going to build a pipeline that will create view for all the tables inside the synapse analytics. this step is quiet similar to the Part 4- Data Ingestion (2) | End to End Azure Data Engineering Project where we will use ForEach activity.
+
+5. before that we need to write a stored procedure
+<img width="541" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/30f5fe38-77b4-487d-ba3e-4b86270e347f">
+
+```
+USE gold_db
+GO
+
+CREATE OR ALTER PROC CreateSQLServerlessView_gold @ViewName nvarchar(100)
+AS
+BEGIN
+
+DECLARE @statement VARCHAR(MAX)
+
+  SET @statement = N'CREATE OR ALTER VIEW ' + @ViewName + ' AS
+     SELECT *
+     FROM
+         OPENROWSET(
+         BULK ''https://mrkdatalakegen2.dfs.core.windows.net/gold/SalesLT/' @ViewNAme + '/'',
+         FORMAT = ''DELTA''
+      ) as [result]
+
+
+EXEC (@statement)
+
+END
+GO
+
+```
+6. create new link service for azure sql database and set the name to serverlessSQLdb
+<img width="575" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/b865323c-870d-4324-955d-b68da201f948">
+<img width="221" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/6babd486-f11d-48fc-9723-b95f38d219d8">
+
+
+7. copy servelrless SQL endpoint to be paste into fully qualified domain name  
+<img width="454" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/49ed0fab-074d-456d-a26e-be3aa7406194">
+
+
+8. go to  integrate tab and click on metadata to create activity to get table names
+<img width="499" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/d63db20d-d42c-4750-92c3-363e5d27d4e8">
+<img width="536" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/914bfd97-a8da-4ee4-acb6-63f48c6164d1">
+
+9. add ForEach activity into the pipeline and in the setting for items add dynamic content
+<img width="461" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/eafea935-1d09-424d-ab0e-024c8281365b">
+```
+@activity('Get Tablenames').output.childItems
+```
+
+10. click on the pencil icon inside the ForEach activity to edit and drag stored procedure activity and in setting set the linked service to serverlessSQLdb
+<img width="510" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/afcf8110-cea0-4047-aa0b-afd9109c5e89">
+```
+@item().name
+```
+
+11. publish the changes , add trigger and trigger now and see whether successful or not
+<img width="554" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/d54c7676-195f-4892-a30b-01792a1fefa8">
+<img width="206" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/1fa130d5-2df0-4cdf-919b-0cde0bb8bdb4">
+
+
+
 ## Part 9 - Data Reporting (Power BI) | End to End Azure Data Engineering Project 
+
+<img width="543" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/6b91a64e-3f0c-4b7b-b48c-75538b527fdf">
+
+
+1. Now we are going to connect Power BI desktop to the views gold_db that we have just created. so firstly make sure to open PowerBI desktop and on the source copy the serverless SQL endpoint from the synapse properties
+
+<img width="422" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/5d04f545-3bb7-4dae-84ff-fb1cb195d97a">
+<img width="459" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/6176fedf-f673-45e1-9a14-948862daed92">
+
+sign in to microsoft account (the one with the pipeline just now)
+<img width="293" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/1295fb5f-4079-4ae9-953b-85811f5c8b8e">
+
+2. bring all the table inside power bi
+
+3. manage the relationship between tables inside the powerbi
+<img width="539" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/f54a5ff4-85b0-461c-8b17-fbd66c071d0f">
+
+4. create your own dashoard using the data given
+<img width="445" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/d46c6e6c-1558-4614-ad36-d1f8328c23f7">
+
+
 ## Part 10 - Security and Governance (AAD) | End to End Azure Data Engineering Project
+
+since we ahve finished the reporting, what if we want to give permission to other data engineer or other employeee to access our resource group? the best way is to create group through azure active directory.
+
+<img width="570" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/8023b3ac-0a0c-467c-a767-d47152435955">
+
+1. open Azure Active Directory resources and click on the group
+<img width="387" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/dffa29d7-b560-4531-9675-967d46796587">
+
+2. create a new group, give the owner role to you and member can be add accordingly to the reuqirement
+
+<img width="312" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/c13747e8-9153-497c-93d0-3a0f230d8caf">
+
+3. go to resource group, under IAM tab, click + and add role assignment, this will give permission to those who are needed to manage the resource also
+
+<img width="340" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/02b0ffd8-87b9-4083-a248-896aa6ee7395">
+<img width="224" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/000e897d-2d88-43dd-9d32-51e9cd5367c2">
+<img width="308" alt="image" src="https://github.com/SyakeerRahman/Data_Engineer_Project_An_End_to_End_Azure_Data_Engineering_Real_Time_Project/assets/105381652/b2cf669b-ec67-4c36-b849-2d9b030e63e7">
+
+4. now those with permission can access the resources and do any changes/ maintain the resources.
+
+
 ## Part 11 (FINAL) - END to END Pipeline Testing | Azure Data Engineering End to End Real Time Project
