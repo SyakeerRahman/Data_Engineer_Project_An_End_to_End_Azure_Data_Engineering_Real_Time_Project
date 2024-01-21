@@ -204,8 +204,9 @@ so next we are going to do transformation from bronze to silver and silver to go
 2. open the bronze to silver workbook and write all these codes:
 
 ``ruby
-dbutils.fs.ls('mnt/bronze/SalesLT/')
-`` <br \>
+dbutils.fs.ls('mnt/bronze/SalesLT/') <br />
+dbutils.fs.ls('mnt/silver/')
+`` <br />
 ``ruby
 dbutils.fs.ls('mnt/silver/')
 ``
